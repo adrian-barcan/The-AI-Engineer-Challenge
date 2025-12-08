@@ -1,0 +1,140 @@
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import styles from './page.module.css';
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+export default function Home() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      role: 'user',
+      content: input.trim(),
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: userMessage.content }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: data.reply,
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again later.',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <main className={styles.container}>
+      <div className={styles.chatContainer}>
+        <header className={styles.header}>
+          <h1 className={styles.title}>🧠 Mental Coach</h1>
+          <p className={styles.subtitle}>Your supportive AI companion</p>
+        </header>
+
+        <div className={styles.messagesContainer}>
+          {messages.length === 0 ? (
+            <div className={styles.welcomeMessage}>
+              <p>Welcome! I'm here to support you.</p>
+              <p>Feel free to share what's on your mind, and I'll do my best to help.</p>
+            </div>
+          ) : (
+            messages.map((message, index) => (
+              <div
+                key={index}
+                className={`${styles.message} ${
+                  message.role === 'user' ? styles.userMessage : styles.assistantMessage
+                }`}
+              >
+                <div className={styles.messageContent}>
+                  <div className={styles.messageRole}>
+                    {message.role === 'user' ? 'You' : 'Coach'}
+                  </div>
+                  <div className={styles.messageText}>{message.content}</div>
+                </div>
+              </div>
+            ))
+          )}
+          {isLoading && (
+            <div className={`${styles.message} ${styles.assistantMessage}`}>
+              <div className={styles.messageContent}>
+                <div className={styles.messageRole}>Coach</div>
+                <div className={styles.loadingDots}>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <form onSubmit={handleSend} className={styles.inputForm}>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type your message here..."
+            className={styles.input}
+            disabled={isLoading}
+          />
+          <button
+            type="submit"
+            className={styles.sendButton}
+            disabled={isLoading || !input.trim()}
+          >
+            Send
+          </button>
+        </form>
+      </div>
+    </main>
+  );
+}
