@@ -47,7 +47,17 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to get error details from the response
+        let errorDetail = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.detail) {
+            errorDetail = errorData.detail;
+          }
+        } catch (e) {
+          // If response is not JSON, use the default error message
+        }
+        throw new Error(errorDetail);
       }
 
       const data = await response.json();
@@ -60,9 +70,14 @@ export default function Home() {
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
+      // Extract error message from the error object
+      const errorMessageText = error instanceof Error 
+        ? error.message 
+        : 'Sorry, I encountered an error. Please try again later.';
+      
       const errorMessage: Message = {
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again later.',
+        content: `⚠️ ${errorMessageText}`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
