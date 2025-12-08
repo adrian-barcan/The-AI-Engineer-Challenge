@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+from mangum import Mangum
 
 load_dotenv()
 
@@ -50,3 +51,6 @@ def chat(request: ChatRequest):
         return {"reply": response.choices[0].message.content}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error calling OpenAI API: {str(e)}")
+
+# Vercel serverless function handler
+handler = Mangum(app)
