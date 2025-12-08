@@ -29,8 +29,9 @@ class ChatRequest(BaseModel):
     message: str
 
 @app.get("/")
+@app.get("/api")
 def root():
-    return {"status": "ok"}
+    return {"status": "ok", "message": "API is running"}
 
 @app.get("/health")
 @app.get("/api/health")
@@ -61,7 +62,6 @@ def chat(request: ChatRequest):
 
 # Vercel serverless function handler
 # Mangum adapts FastAPI (ASGI) to AWS Lambda/Vercel's serverless format
-# When Vercel routes /api/(.*) to api/index.py, it automatically strips the /api prefix
-# So /api/chat becomes /chat when passed to FastAPI
-# We also support /api/chat directly in case the prefix is not stripped
+# When Vercel routes /api/(.*) to api/index.py, the path may or may not include /api prefix
+# We support both /chat and /api/chat routes to handle both cases
 handler = Mangum(app, lifespan="off")
