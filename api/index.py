@@ -30,6 +30,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/")
 @app.get("/api")
+@app.get("/api/")
 def root():
     return {"status": "ok", "message": "API is running"}
 
@@ -60,8 +61,18 @@ def chat(request: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error calling OpenAI API: {str(e)}")
 
+# Catch-all route for debugging - helps identify if function is being called
+@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+def catch_all(path: str):
+    """Catch-all route to help debug routing issues."""
+    return {
+        "error": "Route not found",
+        "path": path,
+        "message": "This endpoint exists but the specific route was not matched. Check your route definitions."
+    }
+
 # Vercel serverless function handler
 # Mangum adapts FastAPI (ASGI) to AWS Lambda/Vercel's serverless format
-# When Vercel routes /api/(.*) to api/index.py, the path may or may not include /api prefix
-# We support both /chat and /api/chat routes to handle both cases
+# When Vercel routes /api/(.*) to api/index.py, it passes the full path including /api
+# We support both /chat and /api/chat routes to handle different path formats
 handler = Mangum(app, lifespan="off")
