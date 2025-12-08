@@ -2,18 +2,18 @@
   "version": 2,
   "builds": [
     {
-      "src": "frontend/package.json",
-      "use": "@vercel/next"
+      "src": "serverless/index.py",
+      "use": "@vercel/python"
     },
     {
-      "src": "api/index.py",
-      "use": "@vercel/python"
+      "src": "frontend/package.json",
+      "use": "@vercel/next"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/index.py"
+      "dest": "/serverless/index.py"
     },
     {
       "src": "/(.*)",
@@ -22,5 +22,10 @@
   ],
   "env": {
     "PYTHON_VERSION": "3.12"
+  },
+  "functions": {
+    "serverless/index.py": {
+      "runtime": "python3.12"
+    }
   }
 }
