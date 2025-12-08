@@ -6,7 +6,6 @@ from openai import OpenAI
 import os
 import traceback
 from dotenv import load_dotenv
-from mangum import Mangum
 
 load_dotenv()
 
@@ -170,7 +169,8 @@ def catch_all(path: str):
     }
 
 # Vercel serverless function handler
-# Mangum adapts FastAPI (ASGI) to AWS Lambda/Vercel's serverless format
+# Vercel's Python runtime natively supports ASGI applications (like FastAPI)
+# No need for Mangum adapter - Vercel handles it automatically
 # When Vercel routes /api/(.*) to api/index.py, it passes the full path including /api
 # We support both /chat and /api/chat routes to handle different path formats
-handler = Mangum(app, lifespan="off")
+# Export the app - Vercel will automatically detect and use it as an ASGI application
