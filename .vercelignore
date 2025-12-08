@@ -1,8 +1,6 @@
-api/
 docs/
 *.ipynb
 .venv/
 uv.lock
 pyproject.toml
-requirements.txt
 .gitattributes
