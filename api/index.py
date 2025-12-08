@@ -32,7 +32,13 @@ class ChatRequest(BaseModel):
 def root():
     return {"status": "ok"}
 
+@app.get("/api")
+def api_root():
+    return {"status": "ok"}
+
+# Handle both /api/chat and /chat (Vercel may strip the /api prefix)
 @app.post("/api/chat")
+@app.post("/chat")
 def chat(request: ChatRequest):
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -53,4 +59,6 @@ def chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail=f"Error calling OpenAI API: {str(e)}")
 
 # Vercel serverless function handler
+# Mangum adapts FastAPI (ASGI) to AWS Lambda/Vercel's serverless format
+# The handler will receive requests from Vercel and route them to FastAPI
 handler = Mangum(app)
