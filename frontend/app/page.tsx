@@ -38,8 +38,19 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      // Determine the API URL - use environment variable or default to localhost for dev
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      // Determine the API URL
+      // In production, NEXT_PUBLIC_API_URL must be set in Vercel environment variables
+      // In development, default to localhost
+      const isDevelopment = typeof window !== 'undefined' && 
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 
+        (isDevelopment ? 'http://localhost:8000' : '');
+      
+      if (!apiUrl) {
+        throw new Error('NEXT_PUBLIC_API_URL is not configured. Please set it in your Vercel environment variables.');
+      }
+      
       const apiEndpoint = `${apiUrl}/api/chat`;
       
       const response = await fetch(apiEndpoint, {
