@@ -11,41 +11,6 @@ load_dotenv()
 
 app = FastAPI()
 
-# Add middleware to handle path normalization and error handling
-@app.middleware("http")
-async def path_normalization_middleware(request: Request, call_next):
-    """
-    Normalize paths to handle Vercel's routing.
-    Vercel may pass /api/chat or /chat depending on configuration.
-    """
-    try:
-        # Get the original path
-        path = request.url.path
-        
-        # If path starts with /api, strip it for internal routing
-        # (since our routes are defined without /api prefix)
-        if path.startswith("/api") and path != "/api":
-            # Create a new request with normalized path
-            # Note: We can't modify the request path directly, but FastAPI routes
-            # handle both /chat and /api/chat, so this should work
-            pass
-        
-        response = await call_next(request)
-        return response
-    except Exception as e:
-        # Log the full error for debugging
-        error_trace = traceback.format_exc()
-        print(f"Error in middleware: {str(e)}")
-        print(f"Traceback: {error_trace}")
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "Internal server error",
-                "detail": str(e),
-                "type": type(e).__name__
-            }
-        )
-
 # CORS so the frontend can talk to backend
 app.add_middleware(
     CORSMiddleware,
@@ -54,11 +19,15 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# Initialize OpenAI client lazily - only when needed
+# Initialize OpenAI client
 def get_openai_client():
+    """Get OpenAI client instance. Raises HTTPException if API key is not configured."""
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        return None
+        raise HTTPException(
+            status_code=500,
+            detail="OPENAI_API_KEY not configured. Please set it in Vercel environment variables."
+        )
     return OpenAI(api_key=api_key)
 
 class ChatRequest(BaseModel):
@@ -84,20 +53,7 @@ def chat(request: ChatRequest):
     Supports both /chat and /api/chat paths for compatibility.
     """
     try:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise HTTPException(
-                status_code=500, 
-                detail="OPENAI_API_KEY not configured. Please set it in Vercel environment variables."
-            )
-        
-        client = get_openai_client()
-        if not client:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to initialize OpenAI client"
-            )
-        
+        # Validate message
         user_message = request.message
         if not user_message or not user_message.strip():
             raise HTTPException(
@@ -105,6 +61,10 @@ def chat(request: ChatRequest):
                 detail="Message cannot be empty"
             )
         
+        # Get OpenAI client (will raise HTTPException if API key is missing)
+        client = get_openai_client()
+        
+        # Call OpenAI API
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -152,21 +112,9 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={
             "error": "Internal server error",
             "detail": str(exc),
-            "type": type(exc).__name__,
-            "path": request.url.path
+            "type": type(exc).__name__
         }
     )
-
-# Catch-all route for debugging - helps identify if function is being called
-@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
-def catch_all(path: str):
-    """Catch-all route to help debug routing issues."""
-    return {
-        "error": "Route not found",
-        "path": path,
-        "message": "This endpoint exists but the specific route was not matched. Check your route definitions.",
-        "available_routes": ["/", "/api", "/api/", "/health", "/api/health", "/chat", "/api/chat"]
-    }
 
 # Vercel serverless function handler
 # Vercel's Python runtime natively supports ASGI applications (like FastAPI)
