@@ -33,7 +33,7 @@ This file configures Vercel to:
 - Route all other requests to the Next.js frontend
 
 ### API Handler
-The `api/index.py` file uses Mangum to wrap the FastAPI app, making it compatible with Vercel's serverless function runtime.
+The `api/index.py` file exports a FastAPI app. Vercel's Python runtime natively supports ASGI applications (like FastAPI), so no adapter is needed.
 
 ## Deployment Steps
 
@@ -108,7 +108,7 @@ The `api/index.py` file uses Mangum to wrap the FastAPI app, making it compatibl
 2. **Backend (FastAPI):**
    - Deployed as a Python serverless function
    - Handles all `/api/*` routes
-   - Uses Mangum to adapt FastAPI to Vercel's serverless runtime
+   - Vercel's Python runtime natively supports ASGI applications
 
 3. **Routing:**
    - Requests to `/api/*` → Python serverless function (`api/index.py`)
@@ -169,5 +169,4 @@ After successful deployment:
 ## Additional Resources
 
 - [Vercel Python Documentation](https://vercel.com/docs/functions/serverless-functions/runtimes/python)
-- [Mangum Documentation](https://mangum.io/)
 - [Next.js on Vercel](https://vercel.com/docs/frameworks/nextjs)
