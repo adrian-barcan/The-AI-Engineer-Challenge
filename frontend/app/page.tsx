@@ -33,6 +33,13 @@ export default function Home() {
       timestamp: new Date(),
     };
 
+    // Prepare conversation history before adding new message (to avoid including it twice)
+    // Convert messages to the format expected by the backend (role and content only)
+    const conversationHistory = messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
@@ -56,7 +63,10 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: userMessage.content }),
+        body: JSON.stringify({ 
+          message: userMessage.content,
+          conversation_history: conversationHistory
+        }),
       });
 
       if (!response.ok) {
